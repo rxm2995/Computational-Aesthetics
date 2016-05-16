@@ -7,16 +7,31 @@
 	let millisecondsPerGeneration = document.querySelector("#speedInput").value;
 	let toroidal = true;
 	let generateBlanks = false;
-	let gridWidth = Math.round(window.innerWidth/10);
-	let gridHeight = Math.round(window.innerHeight/10);
+	let raisedTiles = true;
+	let gridWidth = 70;//Math.round(window.innerWidth/10);
+	let gridHeight = 70;//Math.round(window.innerHeight/10);
 	let liveColor = "#000";
 	let deadColor = "#fff";
 	
+	
+	let threeScene = new THREE.Scene();
+	let threeCamera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 1000 );
+	let threeRenderer = new THREE.WebGLRenderer();
+	let threeCellGeometry = new THREE.BoxGeometry( .1, .1, .1 );
+	let threeLiveMaterial = new THREE.MeshBasicMaterial( { color: 0x000000 } );
+	let threeDeadMaterial = new THREE.MeshBasicMaterial( { color: 0xffffff } );
+	let threeGeometryGrid;
 	function init()
 	{
 		canvas = document.querySelector("canvas");
 		canvas.width = window.innerWidth;
-		canvas.height = window.innerHeight - canvas.getBoundingClientRect().top;
+		canvas.height = window.innerHeight;
+		
+		threeRenderer.setSize(window.innerWidth, window.innerHeight);
+		document.body.appendChild(threeRenderer.domElement);
+		threeRenderer.setClearColor( 0x444444 );
+		threeCamera.position.z = 5;
+		
 		
 		document.querySelector("#widthInput").value = gridWidth;
 		document.querySelector("#heightInput").value = gridHeight;
@@ -84,32 +99,43 @@
 				window.clearInterval(loopIntervalID);
 			}
 			millisecondsPerGeneration = 75;
+			raisedTiles = false;
 			generateBlanks = false;
 			toroidal = true;
-			gridWidth = Math.round(window.innerWidth/10);
-			gridHeight = Math.round(window.innerHeight/10);
+			changeGridDimensions(70-gridWidth, 70-gridHeight);
 			setDefaultSimRules();
 			
+			document.querySelector("#raisedCheckbox").checked = true;
 			document.querySelector("#toroidCheckbox").checked = true;
 			document.querySelector("#genCheckbox").checked = true;
-			document.querySelector("#widthInput").value = gridWidth;
-			document.querySelector("#heightInput").value = gridHeight;
 			document.querySelector("#pauseButton").className = "";
 			document.querySelector("#playButton").className = "hidden";
 			document.querySelector("#speedInput").value = millisecondsPerGeneration;
 			
-			cellGrid = new Array(gridWidth);
-			for(let x = 0; x < gridWidth; x++)
-			{
-				cellGrid[x] = new Array(gridHeight);
-				for(let y = 0; y < gridHeight; y++)
-				{
-					cellGrid[x][y] = Math.round(Math.random());
-				}
-			}
+			fillGrid();
 			loopIntervalID = setInterval(updateAndDraw, millisecondsPerGeneration);
 		}
 
+		document.querySelector("#raisedCheckbox").onchange = function(e)
+		{
+			raisedTiles = e.target.checked;
+			drawGrid();
+		}
+		document.querySelector("#camTiltCheckbox").onchange = function(e)
+		{
+			if(e.target.checked)
+			{
+				threeCamera.position.y = -5;
+				threeCamera.position.z = 1.5;
+				threeCamera.rotation.x = Math.PI/3;
+			}
+			else
+			{
+				threeCamera.position.y = 0;
+				threeCamera.position.z = 5;
+				threeCamera.rotation.x = 0;
+			}
+		}
 		document.querySelector("#toroidCheckbox").onchange = function(e)
 		{
 			toroidal = e.target.checked;
@@ -172,18 +198,28 @@
 		{
 			canvas.width = window.innerWidth;
 			canvas.height = window.innerHeight - canvas.getBoundingClientRect().top;
+			
+			threeCamera.aspect = window.innerWidth / window.innerHeight;
+			threeCamera.updateProjectionMatrix();
+			threeRenderer.setSize( window.innerWidth, window.innerHeight );
 			drawGrid();
 		}, false);
 		
 		ctx = canvas.getContext("2d");
 		
 		cellGrid = new Array(gridWidth);
+		threeGeometryGrid = new Array(gridWidth);
 		for(let x = 0; x < gridWidth; x++)
 		{
 			cellGrid[x] = new Array(gridHeight);
+			threeGeometryGrid[x] = new Array(gridHeight);
 			for(let y = 0; y < gridHeight; y++)
 			{
 				cellGrid[x][y] = Math.round(Math.random());
+				threeGeometryGrid[x][y] = new THREE.Mesh(threeCellGeometry, (cellGrid[x][y] == 0 ? threeDeadMaterial : threeLiveMaterial));
+				threeGeometryGrid[x][y].position.x = (x-(gridWidth/2))*0.1;
+				threeGeometryGrid[x][y].position.y = (y-(gridHeight/2))*0.1;
+				threeScene.add(threeGeometryGrid[x][y]);
 			}
 		}
 		
@@ -249,11 +285,8 @@
 					if(neighbors < underpopThreshold || neighbors > overpopThreshold)
 					{
 						cellGrid[x][y] = 0;
-						ctx.fillStyle = deadColor;
-					}
-					else
-					{
-						ctx.fillStyle = liveColor;
+						threeGeometryGrid[x][y].material = threeDeadMaterial;
+						threeGeometryGrid[x][y].position.z = 0;
 					}
 				}
 				else //if cell is dead
@@ -261,18 +294,16 @@
 					if(neighbors == reproduction)
 					{
 						cellGrid[x][y] = 1;
-						ctx.fillStyle = liveColor;
-					}
-					else
-					{
-						ctx.fillStyle = deadColor;
+						threeGeometryGrid[x][y].material = threeLiveMaterial;
+						threeGeometryGrid[x][y].position.z = (raisedTiles ? 0.1 : 0);
 					}
 				}
 				
 				//Drawing
-				ctx.fillRect(canvas.width*x/gridWidth, canvas.height*y/gridHeight, canvas.width/gridWidth+1, canvas.height/gridHeight+1);
+//				ctx.fillRect(canvas.width*x/gridWidth, canvas.height*y/gridHeight, canvas.width/gridWidth+1, canvas.height/gridHeight+1);
 			}
 		}
+		threeRenderer.render(threeScene, threeCamera);
 	}
 	
 	function checkGridSquare(array, x, y)
@@ -328,33 +359,71 @@
 	
 	function changeGridDimensions(deltaWidth, deltaHeight)
 	{
-		if(deltaWidth != 0)
+		if(deltaWidth == 0 && deltaHeight == 0)
 		{
-			for(let x = 0; x < deltaWidth; x++)
-			{
-				cellGrid[gridWidth+x] = new Array(gridHeight);
-				for(let y = 0; y < gridHeight; y++)
-				{
-					cellGrid[gridWidth+x][y] = (generateBlanks ? 0 : Math.round(Math.random()));
-				}
-			}
-			gridWidth += deltaWidth;
-			document.querySelector("#widthInput").value = gridWidth;
+			return;
 		}
 		
-		if(deltaHeight != 0)
+		if(deltaWidth > 0)
+		{
+			for(let x = gridWidth; x < gridWidth+deltaWidth; x++)
+			{
+				cellGrid[x] = new Array(gridHeight);
+				threeGeometryGrid[x] = new Array(gridHeight);
+				for(let y = 0; y < gridHeight; y++)
+				{
+					cellGrid[x][y] = (generateBlanks ? 0 : Math.round(Math.random()));
+					threeGeometryGrid[x][y] = new THREE.Mesh(threeCellGeometry, (cellGrid[x][y] == 0 ? threeDeadMaterial : threeLiveMaterial));
+					threeScene.add(threeGeometryGrid[x][y]);
+				}
+			}
+		}
+		else if(deltaWidth < 0)
+		{
+			for(let x = -1; x >= deltaWidth; x--)
+			{
+				for(let y = 0; y < gridHeight; y++)
+				{
+					threeScene.remove(threeGeometryGrid[gridWidth+x][y]);
+				}
+			}
+		}
+		gridWidth += deltaWidth;
+		document.querySelector("#widthInput").value = gridWidth;
+		
+		if(deltaHeight > 0)
 		{
 			for(let x = 0; x < gridWidth; x++)
 			{
 				for(let y = gridHeight; y < gridHeight+deltaHeight; y++)
 				{
 					cellGrid[x][y] = (generateBlanks ? 0 : Math.round(Math.random()));
+					threeGeometryGrid[x][y] = new THREE.Mesh(threeCellGeometry, (cellGrid[x][y] == 0 ? threeDeadMaterial : threeLiveMaterial));
+					threeScene.add(threeGeometryGrid[x][y]);
 				}
 			}
-			gridHeight += deltaHeight;
-			document.querySelector("#heightInput").value = gridHeight;
 		}
-		//If either delta is negative, the new values of deltaWidth and deltaHeight will keep the excess data from being used in updateAndDraw(). No array pruning is necessary.
+		else if(deltaHeight < 0)
+		{
+			for(let x = 0; x < gridWidth; x++)
+			{
+				for(let y = -1; y >= deltaHeight; y--)
+				{
+					threeScene.remove(threeGeometryGrid[x][gridHeight+y]);
+				}
+			}
+		}
+		gridHeight += deltaHeight;
+		document.querySelector("#heightInput").value = gridHeight;
+		
+		for(let x = 0; x < gridWidth; x++)
+		{
+			for(let y = 0; y < gridHeight; y++)
+			{
+				threeGeometryGrid[x][y].position.x = (x-(gridWidth/2))*0.1;
+				threeGeometryGrid[x][y].position.y = (y-(gridHeight/2))*0.1;
+			}
+		}
 		
 		//Drawing (so that changes can be reflected even while simulation is paused)
 		drawGrid();
@@ -368,15 +437,24 @@
 			{
 				if(cellGrid[x][y] == 0)
 				{
-					ctx.fillStyle = deadColor;
+					if(threeGeometryGrid[x][y].material != threeDeadMaterial)
+					{
+						threeGeometryGrid[x][y].material = threeDeadMaterial;
+					}
+					threeGeometryGrid[x][y].position.z = 0;
 				}
 				else
 				{
-					ctx.fillStyle = liveColor;
+					if(threeGeometryGrid[x][y].material != threeLiveMaterial)
+					{
+						threeGeometryGrid[x][y].material = threeLiveMaterial;
+					}
+					threeGeometryGrid[x][y].position.z = (raisedTiles ? 0.1 : 0);
 				}
-				ctx.fillRect(canvas.width*x/gridWidth, canvas.height*y/gridHeight, canvas.width/gridWidth+1, canvas.height/gridHeight+1);
 			}
 		}
+		
+		threeRenderer.render(threeScene, threeCamera);
 	}
 	
 	function clearGrid()
