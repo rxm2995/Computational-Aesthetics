@@ -1,16 +1,16 @@
 !function()
 {
-	var canvas, ctx, cellGrid, loopIntervalID;
-	var underpopThreshold = document.querySelector("#underPopInput").value;
-	var overpopThreshold = document.querySelector("#overPopInput").value;
-	var reproduction = document.querySelector("#reproductionInput").value;
-	var millisecondsPerGeneration = document.querySelector("#speedInput").value;
-	var toroidal = true;
-	var generateBlanks = false;
-	var gridWidth = Math.round(window.innerWidth/10);
-	var gridHeight = Math.round(window.innerHeight/10);
-	var liveColor = "#000";
-	var deadColor = "#fff";
+	let canvas, ctx, cellGrid, loopIntervalID;
+	let underpopThreshold = document.querySelector("#underPopInput").value;
+	let overpopThreshold = document.querySelector("#overPopInput").value;
+	let reproduction = document.querySelector("#reproductionInput").value;
+	let millisecondsPerGeneration = document.querySelector("#speedInput").value;
+	let toroidal = true;
+	let generateBlanks = false;
+	let gridWidth = Math.round(window.innerWidth/10);
+	let gridHeight = Math.round(window.innerHeight/10);
+	let liveColor = "#000";
+	let deadColor = "#fff";
 	
 	function init()
 	{
@@ -99,10 +99,10 @@
 			document.querySelector("#speedInput").value = millisecondsPerGeneration;
 			
 			cellGrid = new Array(gridWidth);
-			for(var x = 0; x < gridWidth; x++)
+			for(let x = 0; x < gridWidth; x++)
 			{
 				cellGrid[x] = new Array(gridHeight);
-				for(var y = 0; y < gridHeight; y++)
+				for(let y = 0; y < gridHeight; y++)
 				{
 					cellGrid[x][y] = Math.round(Math.random());
 				}
@@ -121,16 +121,16 @@
 
 		document.querySelector("#interfaceToggle").onclick = function(e)
 		{
-			var ui = document.querySelector("#userInterface");
+			let ui = document.querySelector("#userInterface");
 			if(ui.style.left == "-25%")
 			{
 				ui.style.left = "0%";
-				e.target.innerHTML = "«";
+				e.target.innerHTML = "&lt;";
 			}
 			else
 			{
 				ui.style.left = "-25%";
-				e.target.innerHTML = "»";
+				e.target.innerHTML = "&gt;";
 			}
 		};
 		
@@ -178,10 +178,10 @@
 		ctx = canvas.getContext("2d");
 		
 		cellGrid = new Array(gridWidth);
-		for(var x = 0; x < gridWidth; x++)
+		for(let x = 0; x < gridWidth; x++)
 		{
 			cellGrid[x] = new Array(gridHeight);
-			for(var y = 0; y < gridHeight; y++)
+			for(let y = 0; y < gridHeight; y++)
 			{
 				cellGrid[x][y] = Math.round(Math.random());
 			}
@@ -209,7 +209,7 @@
 			if(sub.className == "hidden")
 			{
 				sub.className = "";
-				header.innerHTML = "&#9660; "+title;
+				header.innerHTML = "<span style='font-size:80%'>&#9660;</span> "+title;
 			}
 			else
 			{
@@ -220,19 +220,19 @@
 	
 	function updateAndDraw()
 	{
-		var cellGridCopy = new Array(gridWidth);
-		for(var i = 0; i < gridWidth; i++)
+		let cellGridCopy = new Array(gridWidth);
+		for(let i = 0; i < gridWidth; i++)
 		{
 			cellGridCopy[i] = cellGrid[i].slice();
 		}
 		
-		for(var x = 0; x < gridWidth; x++)
+		for(let x = 0; x < gridWidth; x++)
 		{
-			for(var y = 0; y < gridHeight; y++)
+			for(let y = 0; y < gridHeight; y++)
 			{				
 				//Getting count of live neighbors
 				
-				var neighbors = 0;
+				let neighbors = 0;
 				neighbors += checkGridSquare(cellGridCopy, x+1, y+1);
 				neighbors += checkGridSquare(cellGridCopy, x+1, y);
 				neighbors += checkGridSquare(cellGridCopy, x+1, y-1);
@@ -330,10 +330,10 @@
 	{
 		if(deltaWidth != 0)
 		{
-			for(var x = 0; x < deltaWidth; x++)
+			for(let x = 0; x < deltaWidth; x++)
 			{
 				cellGrid[gridWidth+x] = new Array(gridHeight);
-				for(var y = 0; y < gridHeight; y++)
+				for(let y = 0; y < gridHeight; y++)
 				{
 					cellGrid[gridWidth+x][y] = (generateBlanks ? 0 : Math.round(Math.random()));
 				}
@@ -344,9 +344,9 @@
 		
 		if(deltaHeight != 0)
 		{
-			for(var x = 0; x < gridWidth; x++)
+			for(let x = 0; x < gridWidth; x++)
 			{
-				for(var y = gridHeight; y < gridHeight+deltaHeight; y++)
+				for(let y = gridHeight; y < gridHeight+deltaHeight; y++)
 				{
 					cellGrid[x][y] = (generateBlanks ? 0 : Math.round(Math.random()));
 				}
@@ -362,9 +362,9 @@
 	
 	function drawGrid()
 	{
-		for(var x = 0; x < gridWidth; x++)
+		for(let x = 0; x < gridWidth; x++)
 		{
-			for(var y = 0; y < gridHeight; y++)
+			for(let y = 0; y < gridHeight; y++)
 			{
 				if(cellGrid[x][y] == 0)
 				{
@@ -381,9 +381,9 @@
 	
 	function clearGrid()
 	{
-		for(var x = 0; x < gridWidth; x++)
+		for(let x = 0; x < gridWidth; x++)
 		{
-			for(var y = 0; y < gridHeight; y++)
+			for(let y = 0; y < gridHeight; y++)
 			{
 				cellGrid[x][y] = 0;
 			}
@@ -393,9 +393,9 @@
 	
 	function fillGrid()
 	{
-		for(var x = 0; x < gridWidth; x++)
+		for(let x = 0; x < gridWidth; x++)
 		{
-			for(var y = 0; y < gridHeight; y++)
+			for(let y = 0; y < gridHeight; y++)
 			{
 				cellGrid[x][y] = Math.round(Math.random());
 			}
